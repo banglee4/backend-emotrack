@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dokumentasi REST API GEMASTIK</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+
+  <body class="bg-gray-100 text-gray-800 font-sans">
+    <div class="max-w-4xl mx-auto p-6">
+      <h1 class="text-4xl font-bold mb-6 text-center text-blue-600">
+        Dokumentasi REST API GEMASTIK
+      </h1>
+
+      <section class="mb-10">
+        <h2 class="text-2xl font-semibold mb-4 text-gray-700">
+          Format DB User
+        </h2>
+        <pre
+          class="bg-gray-800 text-green-400 p-4 rounded-lg overflow-x-auto text-sm"
+        >
+CREATE TABLE users (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  username VARCHAR(50) NOT NULL UNIQUE,
+  NAME VARCHAR(100) NOT NULL,
+  DATE DATE, -- tanggal lahir atau lainnya, tergantung konteks
+  email VARCHAR(100) NOT NULL UNIQUE,
+  PASSWORD VARCHAR(255) NOT NULL,
+  ROLE ENUM('ibu_hamil', 'keluarga') NOT NULL,
+  hpht DATE, -- hanya berlaku untuk role 'ibu_hamil'
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+      </pre
+        >
+      </section>
+
+      <section class="mb-10">
+        <h2 class="text-2xl font-semibold mb-4 text-gray-700">
+          Dokumentasi API
+        </h2>
+
+        <div class="mb-8">
+          <h3 class="text-xl font-bold mb-2 text-blue-500">Register</h3>
+          <p class="mb-1">
+            <span class="font-semibold">Endpoint:</span>
+            <code class="bg-gray-200 px-2 py-1 rounded"
+              >/api/auth/register</code
+            >
+          </p>
+          <p class="mb-1"><span class="font-semibold">Method:</span> POST</p>
+          <p class="mb-1 font-semibold">Body:</p>
+          <pre
+            class="bg-gray-800 text-green-400 p-4 rounded-lg overflow-x-auto text-sm"
+          >
+{
+  "username": "username",
+  "name": "name",
+  "date": "date",
+  "email": "email",
+  "password": "password",
+  "role": "role",
+  "hpht": "hpht"
+}
+        </pre
+          >
+          <p class="mb-1 font-semibold">Response:</p>
+          <pre
+            class="bg-gray-800 text-green-400 p-4 rounded-lg overflow-x-auto text-sm"
+          >
+{
+  "message": "User registered successfully",
+  "user": {
+    "id": 1,
+    "username": "username",
+    "name": "name",
+    "date": "date",
+    "email": "email",
+    "role": "role",
+    "hpht": "hpht",
+    "created_at": "created_at"
+  }
+}
+        </pre
+          >
+        </div>
+
+        <div class="mb-8">
+          <h3 class="text-xl font-bold mb-2 text-blue-500">Login</h3>
+          <p class="mb-1">
+            <span class="font-semibold">Endpoint:</span>
+            <code class="bg-gray-200 px-2 py-1 rounded">/api/auth/login</code>
+          </p>
+          <p class="mb-1"><span class="font-semibold">Method:</span> POST</p>
+          <p class="mb-1 font-semibold">Body:</p>
+          <pre
+            class="bg-gray-800 text-green-400 p-4 rounded-lg overflow-x-auto text-sm"
+          >
+{
+  "email": "email",
+  "password": "password"
+}
+        </pre
+          >
+          <p class="mb-1 font-semibold">Response:</p>
+          <pre
+            class="bg-gray-800 text-green-400 p-4 rounded-lg overflow-x-auto text-sm"
+          >
+{
+  "message": "Login successful",
+  "token": "token",
+  "user": {
+    "id": 1,
+    "username": "username",
+    "name": "name",
+    "date": "date",
+    "email": "email",
+    "role": "role",
+    "hpht": "hpht",
+    "created_at": "created_at"
+  }
+}
+        </pre
+          >
+        </div>
+
+        <div class="mb-8">
+          <h3 class="text-xl font-bold mb-2 text-blue-500">Chat</h3>
+          <p class="mb-1">
+            <span class="font-semibold">Endpoint:</span>
+            <code class="bg-gray-200 px-2 py-1 rounded"
+              >/api/chat/generate</code
+            >
+          </p>
+          <p class="mb-1"><span class="font-semibold">Method:</span> POST</p>
+          <p class="mb-1 font-semibold">Body:</p>
+          <pre
+            class="bg-gray-800 text-green-400 p-4 rounded-lg overflow-x-auto text-sm"
+          >
+{
+  "prompt": "prompt"
+}
+        </pre
+          >
+          <p class="mb-1 font-semibold">Response:</p>
+          <pre
+            class="bg-gray-800 text-green-400 p-4 rounded-lg overflow-x-auto text-sm"
+          >
+{
+  "response": "response"
+}
+        </pre
+          >
+        </div>
+      </section>
+    </div>
+  </body>
+</html>
