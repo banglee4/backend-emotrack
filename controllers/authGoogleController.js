@@ -1,24 +1,18 @@
-const passport = require("passport");
-const GoogleStrategy = require("passport-google-oauth20").Strategy;
+exports.getProfile = (req, res) => {
+  if (!req.isAuthenticated()) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
 
-passport.use(
-  new GoogleStrategy(
-    {
-      clientID: "YOUR_GOOGLE_CLIENT_ID",
-      clientSecret: "YOUR_GOOGLE_CLIENT_SECRET",
-      callbackURL: "/auth/google/callback",
-    },
-    function (accessToken, refreshToken, profile, done) {
-      // Simpan info user ke database jika perlu
-      return done(null, profile);
-    }
-  )
-);
-
-// Serialize & deserialize user
-passport.serializeUser((user, done) => {
-  done(null, user);
-});
-passport.deserializeUser((obj, done) => {
-  done(null, obj);
-});
+  // Gunakan struktur data dari database
+  res.json({
+    name: req.user.name,
+    email: req.user.email,
+    photo: req.user.photo,
+  });
+};
+  
+exports.logout = (req, res) => {
+  req.logout(() => {
+    res.redirect("/");
+  });
+};

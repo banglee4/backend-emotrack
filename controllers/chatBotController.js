@@ -2,7 +2,7 @@ const { GoogleGenAI } = require("@google/genai");
 const Chat = require("../models/chatModel");
 
 const ai = new GoogleGenAI({
-  apiKey: "AIzaSyDZPAUiX-Q2iAA7mAhndTdsQYGyCuSl6bw",
+  apiKey: process.env.API_KEY_GEMINI,
 });
 
 const systemPrompt = `
