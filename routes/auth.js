@@ -7,6 +7,11 @@ const authGoogleController = require("../controllers/authGoogleController");
 router.post("/register", authController.register);
 router.post("/login", authController.login);
 
+// reset password route
+router.post("/forgot-password", authController.forgotPassword);
+router.post("/verify-reset-code", authController.verifyResetCode);
+router.post("/reset-password", authController.resetPassword);
+
 // === GOOGLE LOGIN ===
 router.get(
   "/google",

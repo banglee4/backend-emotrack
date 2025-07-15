@@ -1,0 +1,26 @@
+### Kirim kode verifikasi ke email
+POST http://localhost:3000/api/auth/forgot-password
+Content-Type: application/json
+
+{
+  "email": "iw8628940@gmail.com"
+}
+
+### Verifikasi kode
+POST http://localhost:3000/api/auth/verify-reset-code
+Content-Type: application/json
+
+{
+  "email": "iw8628940@gmail.com",
+  "code": "bdd8f2"
+}
+
+### Reset password
+POST http://localhost:3000/api/auth/reset-password
+Content-Type: application/json
+
+{
+  "email": "iw8628940@gmail.com",
+  "code": "bdd8f2",
+  "newPassword": "passwordBaru123"
+}

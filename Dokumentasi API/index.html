@@ -153,6 +153,96 @@ CREATE TABLE users (
         </pre
           >
         </div>
+
+        <div class="mb-8">
+          <h3 class="text-xl font-bold mb-2 text-blue-500">
+            Lupa Password - Kirim Kode
+          </h3>
+          <p class="mb-1">
+            <span class="font-semibold">Endpoint:</span>
+            <code class="bg-gray-200 px-2 py-1 rounded"
+              >/auth/forgot-password</code
+            >
+          </p>
+          <p class="mb-1"><span class="font-semibold">Method:</span> POST</p>
+          <p class="mb-1 font-semibold">Body:</p>
+          <pre
+            class="bg-gray-800 text-green-400 p-4 rounded-lg overflow-x-auto text-sm"
+          >
+{
+  "email": "user@example.com"
+}
+          </pre>
+          <p class="mb-1 font-semibold">Response:</p>
+          <pre
+            class="bg-gray-800 text-green-400 p-4 rounded-lg overflow-x-auto text-sm"
+          >
+{
+  "message": "Kode verifikasi dikirim ke email Anda"
+}
+          </pre>
+        </div>
+
+        <div class="mb-8">
+          <h3 class="text-xl font-bold mb-2 text-blue-500">
+            Verifikasi Kode Reset Password
+          </h3>
+          <p class="mb-1">
+            <span class="font-semibold">Endpoint:</span>
+            <code class="bg-gray-200 px-2 py-1 rounded"
+              >/auth/verify-reset-code</code
+            >
+          </p>
+          <p class="mb-1"><span class="font-semibold">Method:</span> POST</p>
+          <p class="mb-1 font-semibold">Body:</p>
+          <pre
+            class="bg-gray-800 text-green-400 p-4 rounded-lg overflow-x-auto text-sm"
+          >
+{
+  "email": "user@example.com",
+  "code": "a1b2c3"
+}
+          </pre>
+          <p class="mb-1 font-semibold">Response:</p>
+          <pre
+            class="bg-gray-800 text-green-400 p-4 rounded-lg overflow-x-auto text-sm"
+          >
+{
+  "message": "Kode valid"
+}
+          </pre>
+        </div>
+
+        <div class="mb-8">
+          <h3 class="text-xl font-bold mb-2 text-blue-500">
+            Reset Password Baru
+          </h3>
+          <p class="mb-1">
+            <span class="font-semibold">Endpoint:</span>
+            <code class="bg-gray-200 px-2 py-1 rounded"
+              >/auth/reset-password</code
+            >
+          </p>
+          <p class="mb-1"><span class="font-semibold">Method:</span> POST</p>
+          <p class="mb-1 font-semibold">Body:</p>
+          <pre
+            class="bg-gray-800 text-green-400 p-4 rounded-lg overflow-x-auto text-sm"
+          >
+{
+  "email": "user@example.com",
+  "code": "a1b2c3",
+  "newPassword": "passwordBaru123"
+}
+          </pre>
+          <p class="mb-1 font-semibold">Response:</p>
+          <pre
+            class="bg-gray-800 text-green-400 p-4 rounded-lg overflow-x-auto text-sm"
+          >
+{
+  "message": "Password berhasil direset"
+}
+          </pre>
+        </div>
       </section>
     </div>
   </body>

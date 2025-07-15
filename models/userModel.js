@@ -25,4 +25,13 @@ const findUserByEmail = (email, callback) => {
   db.query(sql, [email], callback);
 };
 
-module.exports = { createUser, findUserByEmail };
+// Update password user berdasarkan email
+const updatePasswordByEmail = (email, hashedPassword, callback) => {
+  db.query(
+    "UPDATE users SET password = ? WHERE email = ?",
+    [hashedPassword, email],
+    callback
+  );
+};
+
+module.exports = { createUser, findUserByEmail, updatePasswordByEmail };
