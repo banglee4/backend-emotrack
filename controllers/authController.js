@@ -4,48 +4,153 @@ const User = require("../models/userModel");
 const nodemailer = require("nodemailer");
 const crypto = require("crypto");
 
-// Registrasi
+// Penyimpanan OTP sementara (gunakan Redis untuk produksi)
+const pendingUsers = {};
+const resetTokens = {};
+
+// Register - Kirim OTP
 exports.register = (req, res) => {
   const { username, name, date, email, password, role, hpht } = req.body;
 
-  // Validasi panjang password
-  if (password.length < 8) {
+  if (email) {
+    User.findUserByEmail(email, (err, results) => {
+      if (err || results.length > 0) {
+        return res.status(400).json({ message: "Email sudah terdaftar" });
+      }
+    });
+  }
+
+  // Validasi
+  if (password.length < 8)
     return res.status(400).json({ message: "Password minimal 8 karakter" });
-  }
-
-  // Validasi role
-  if (!["ibu_hamil", "keluarga"].includes(role)) {
+  if (!["ibu_hamil", "keluarga"].includes(role))
     return res.status(400).json({ message: "Role tidak valid" });
-  }
-
-  // Validasi HPHT jika role ibu hamil
-  if (role === "ibu_hamil" && !hpht) {
+  if (role === "ibu_hamil" && !hpht)
     return res
       .status(400)
       .json({ message: "HPHT wajib diisi untuk ibu hamil" });
-  }
 
-  // Enkripsi password
+  const otpCode = Math.floor(100000 + Math.random() * 900000).toString(); // 6 digit angka
+  const expires = Date.now() + 5 * 60 * 1000; // 5 menit
+
   bcrypt.hash(password, 10, (err, hashedPassword) => {
     if (err) return res.status(500).json({ message: "Error hashing password" });
 
-    const newUser = {
-      username,
-      name,
-      date,
-      email,
-      password: hashedPassword,
-      role,
-      hpht: role === "ibu_hamil" ? hpht : null,
+    pendingUsers[email] = {
+      userData: {
+        username,
+        name,
+        date,
+        email,
+        password: hashedPassword,
+        role,
+        hpht: role === "ibu_hamil" ? hpht : null,
+      },
+      code: otpCode,
+      expires,
     };
 
-    User.createUser(newUser, (err, result) => {
-      if (err) {
-        console.log(err);
-        return res.status(500).json({ message: "Gagal mendaftar", error: err });
-      }
-      res.json({ message: "Registrasi berhasil" });
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
     });
+
+    const mailOptions = {
+      from: `"Emotrack Support" <${process.env.EMAIL_USER}>`,
+      to: email,
+      subject: "Kode Verifikasi Pendaftaran - Emotrack",
+      html: `
+        <div style="font-family: Arial; padding: 20px;">
+          <h2 style="color:#4CAF50">Verifikasi Akun Emotrack</h2>
+          <p>Gunakan kode berikut untuk menyelesaikan proses pendaftaran akun Anda:</p>
+          <h1 style="background:#f2f2f2; padding:10px; border-radius:5px; display:inline-block;">${otpCode}</h1>
+          <p>Kode ini berlaku selama 5 menit. Jangan bagikan kode ini kepada siapa pun.</p>
+        </div>
+      `,
+    };
+
+    transporter.sendMail(mailOptions, (error) => {
+      if (error) {
+        console.error(error);
+        return res
+          .status(500)
+          .json({ message: "Gagal mengirim email verifikasi" });
+      }
+
+      res.json({ message: "Kode verifikasi telah dikirim ke email Anda" });
+    });
+  });
+};
+
+// Verifikasi OTP dan Simpan User ke DB
+exports.verifyRegisterOTP = (req, res) => {
+  const { email, code } = req.body;
+  const pending = pendingUsers[email];
+
+  if (!pending || pending.code !== code || Date.now() > pending.expires) {
+    return res.status(400).json({ message: "Kode OTP salah atau kadaluarsa" });
+  }
+
+  User.createUser(pending.userData, (err, result) => {
+    if (err) {
+      console.log(err);
+      return res.status(500).json({ message: "Gagal mendaftar", error: err });
+    }
+
+    delete pendingUsers[email];
+    res.json({ message: "Registrasi berhasil dan akun terverifikasi" });
+  });
+};
+
+// Kirim ulang OTP register
+exports.resendRegisterOTP = (req, res) => {
+  const { email } = req.body;
+
+  const pending = pendingUsers[email];
+  if (!pending) {
+    return res.status(400).json({
+      message: "Data pendaftaran tidak ditemukan atau sudah kedaluwarsa",
+    });
+  }
+
+  const otpCode = Math.floor(100000 + Math.random() * 900000).toString(); // 6 digit angka
+  const expires = Date.now() + 5 * 60 * 1000; // berlaku 5 menit
+
+  pendingUsers[email].code = otpCode;
+  pendingUsers[email].expires = expires;
+
+  const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS,
+    },
+  });
+
+  const mailOptions = {
+    from: `"Emotrack Support" <${process.env.EMAIL_USER}>`,
+    to: email,
+    subject: "Kode Verifikasi Baru - Emotrack",
+    html: `
+      <div style="font-family: Arial; padding: 20px;">
+        <h2 style="color:#4CAF50">Verifikasi Ulang Akun Emotrack</h2>
+        <p>Kode OTP baru Anda adalah:</p>
+        <h1 style="background:#f2f2f2; padding:10px; border-radius:5px; display:inline-block;">${otpCode}</h1>
+        <p>Kode ini berlaku selama 5 menit. Jangan bagikan kepada siapa pun.</p>
+      </div>
+    `,
+  };
+
+  transporter.sendMail(mailOptions, (err, info) => {
+    if (err) {
+      console.log(err);
+      return res.status(500).json({ message: "Gagal mengirim ulang OTP" });
+    }
+
+    res.json({ message: "Kode OTP baru telah dikirim ke email Anda" });
   });
 };
 
@@ -65,7 +170,6 @@ exports.login = (req, res) => {
         return res
           .status(500)
           .json({ message: "Error saat membandingkan password" });
-
       if (!isMatch) return res.status(401).json({ message: "Password salah" });
 
       const token = jwt.sign({ id: user.id, role: user.role }, "SECRET_KEY", {
@@ -88,12 +192,7 @@ exports.login = (req, res) => {
   });
 };
 
-// reset password
-
-// Penyimpanan kode verifikasi sementara (gunakan Redis di produksi)
-const resetTokens = {};
-
-// Kirim kode reset ke email
+// Lupa Password - Kirim OTP
 exports.forgotPassword = (req, res) => {
   const { email } = req.body;
 
@@ -102,12 +201,11 @@ exports.forgotPassword = (req, res) => {
       return res.status(404).json({ message: "Email tidak ditemukan" });
     }
 
-    const resetCode = crypto.randomBytes(3).toString("hex"); // contoh: "a1b2c3"
-    const expires = Date.now() + 5 * 60 * 1000; // 5 menit
+    const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const expires = Date.now() + 5 * 60 * 1000;
 
     resetTokens[email] = { code: resetCode, expires };
 
-    // Konfigurasi pengiriman email
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
@@ -121,25 +219,19 @@ exports.forgotPassword = (req, res) => {
       to: email,
       subject: "Kode Reset Password - Emotrack",
       html: `
-    <div style="font-family: Arial, sans-serif; line-height: 1.6; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 8px;">
-      <h2 style="color: #4CAF50;">Reset Password Emotrack</h2>
-      <p>Halo,</p>
-      <p>Anda telah meminta untuk mereset password akun Emotrack Anda. Gunakan kode verifikasi di bawah ini:</p>
-      <div style="background-color: #f2f2f2; padding: 15px; text-align: center; border-radius: 5px; margin: 20px 0;">
-        <h1 style="letter-spacing: 2px; color: #333;">${resetCode}</h1>
-      </div>
-      <p><strong>Jangan bagikan kode ini kepada siapa pun.</strong> Kode ini hanya berlaku selama 5 menit.</p>
-      <p>Jika Anda tidak meminta reset password, silakan abaikan email ini.</p>
-      <br />
-      <p>Salam hangat,</p>
-      <p style="color: #4CAF50; font-weight: bold;">Tim Emotrack</p>
-    </div>
-  `,
+        <div style="font-family: Arial, padding: 20px;">
+          <h2 style="color: #4CAF50;">Reset Password Emotrack</h2>
+          <p>Gunakan kode berikut untuk reset password akun Anda:</p>
+          <h1 style="background: #f2f2f2; padding: 15px; text-align: center; border-radius: 5px;">${resetCode}</h1>
+          <p>Kode ini hanya berlaku selama 5 menit.</p>
+          <p>Jika Anda tidak meminta reset password, abaikan email ini.</p>
+        </div>
+      `,
     };
 
-    transporter.sendMail(mailOptions, (error, info) => {
+    transporter.sendMail(mailOptions, (error) => {
       if (error) {
-        console.log(error);
+        console.error(error);
         return res.status(500).json({ message: "Gagal mengirim email" });
       }
 
@@ -148,7 +240,7 @@ exports.forgotPassword = (req, res) => {
   });
 };
 
-// Verifikasi kode
+// Verifikasi OTP Reset
 exports.verifyResetCode = (req, res) => {
   const { email, code } = req.body;
   const token = resetTokens[email];
@@ -160,7 +252,7 @@ exports.verifyResetCode = (req, res) => {
   res.json({ message: "Kode valid" });
 };
 
-// Reset password baru
+// Reset Password
 exports.resetPassword = (req, res) => {
   const { email, code, newPassword } = req.body;
   const token = resetTokens[email];
@@ -177,12 +269,12 @@ exports.resetPassword = (req, res) => {
     if (err)
       return res.status(500).json({ message: "Gagal mengenkripsi password" });
 
-    User.updatePasswordByEmail(email, hashedPassword, (err, result) => {
+    User.updatePasswordByEmail(email, hashedPassword, (err) => {
       if (err) {
         return res.status(500).json({ message: "Gagal update password" });
       }
 
-      delete resetTokens[email]; // Hapus token
+      delete resetTokens[email];
       res.json({ message: "Password berhasil direset" });
     });
   });
