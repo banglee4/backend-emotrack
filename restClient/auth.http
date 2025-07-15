@@ -1,0 +1,69 @@
+### register akun
+POST http://localhost:3000/api/auth/register
+Content-Type: application/json
+
+{
+  "username": "arief",
+  "name": "Arief Rachman",
+  "date": "2000-01-01",
+  "email": "iw8628940@gmail.com",
+  "password": "emotrack123",
+  "role": "ibu_hamil",
+  "hpht": "2024-01-01"
+}
+
+### resend otp register
+POST http://localhost:3000/api/auth/resend-otp
+Content-Type: application/json
+
+{
+  "email": "iw8628940@gmail.com"
+}
+
+
+### konfirmasi otp
+POST http://localhost:3000/api/auth/verify-register-otp
+Content-Type: application/json
+
+{
+  "email": "iw8628940@gmail.com",
+  "code": "135507"
+}
+
+### login akun
+POST http://localhost:3000/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "iw8628940@gmail.com",
+  "password": "emotrack123"
+}
+
+### Kirim kode verifikasi ke email lupa password
+POST http://localhost:3000/api/auth/forgot-password
+Content-Type: application/json
+
+{
+  "email": "iw8628940@gmail.com"
+}
+
+### Verifikasi kode lupa password
+POST http://localhost:3000/api/auth/verify-reset-code
+Content-Type: application/json
+
+{
+  "email": "iw8628940@gmail.com",
+  "code": "305816"
+}
+
+### Reset password
+POST http://localhost:3000/api/auth/reset-password
+Content-Type: application/json
+
+{
+  "email": "iw8628940@gmail.com",
+  "code": "512063",
+  "newPassword": "arief140105"
+}
+
+

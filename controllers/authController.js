@@ -12,75 +12,90 @@ const resetTokens = {};
 exports.register = (req, res) => {
   const { username, name, date, email, password, role, hpht } = req.body;
 
-  if (email) {
-    User.findUserByEmail(email, (err, results) => {
-      if (err || results.length > 0) {
-        return res.status(400).json({ message: "Email sudah terdaftar" });
-      }
-    });
-  }
+  if (!email) return res.status(400).json({ message: "Email wajib diisi" });
 
-  // Validasi
-  if (password.length < 8)
-    return res.status(400).json({ message: "Password minimal 8 karakter" });
-  if (!["ibu_hamil", "keluarga"].includes(role))
-    return res.status(400).json({ message: "Role tidak valid" });
-  if (role === "ibu_hamil" && !hpht)
-    return res
-      .status(400)
-      .json({ message: "HPHT wajib diisi untuk ibu hamil" });
+  // Cek apakah email sudah terdaftar
+  User.findUserByEmail(email, (err, results) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ message: "Terjadi kesalahan server" });
+    }
 
-  const otpCode = Math.floor(100000 + Math.random() * 900000).toString(); // 6 digit angka
-  const expires = Date.now() + 5 * 60 * 1000; // 5 menit
+    if (results.length > 0) {
+      return res.status(400).json({ message: "Email sudah terdaftar" });
+    }
 
-  bcrypt.hash(password, 10, (err, hashedPassword) => {
-    if (err) return res.status(500).json({ message: "Error hashing password" });
+    // Validasi password
+    if (password.length < 8)
+      return res.status(400).json({ message: "Password minimal 8 karakter" });
 
-    pendingUsers[email] = {
-      userData: {
-        username,
-        name,
-        date,
-        email,
-        password: hashedPassword,
-        role,
-        hpht: role === "ibu_hamil" ? hpht : null,
-      },
-      code: otpCode,
-      expires,
-    };
+    // Validasi role
+    if (!["ibu_hamil", "keluarga"].includes(role))
+      return res.status(400).json({ message: "Role tidak valid" });
 
-    const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-      },
-    });
+    // Validasi HPHT
+    if (role === "ibu_hamil" && !hpht)
+      return res.status(400).json({ message: "HPHT wajib diisi" });
 
-    const mailOptions = {
-      from: `"Emotrack Support" <${process.env.EMAIL_USER}>`,
-      to: email,
-      subject: "Kode Verifikasi Pendaftaran - Emotrack",
-      html: `
-        <div style="font-family: Arial; padding: 20px;">
-          <h2 style="color:#4CAF50">Verifikasi Akun Emotrack</h2>
-          <p>Gunakan kode berikut untuk menyelesaikan proses pendaftaran akun Anda:</p>
-          <h1 style="background:#f2f2f2; padding:10px; border-radius:5px; display:inline-block;">${otpCode}</h1>
-          <p>Kode ini berlaku selama 5 menit. Jangan bagikan kode ini kepada siapa pun.</p>
-        </div>
-      `,
-    };
+    // Generate OTP dan kadaluarsa
+    const otpCode = Math.floor(100000 + Math.random() * 900000).toString(); // 6 digit angka
+    const expires = Date.now() + 5 * 60 * 1000;
 
-    transporter.sendMail(mailOptions, (error) => {
-      if (error) {
-        console.error(error);
-        return res
-          .status(500)
-          .json({ message: "Gagal mengirim email verifikasi" });
-      }
+    // Enkripsi password
+    bcrypt.hash(password, 10, (err, hashedPassword) => {
+      if (err)
+        return res.status(500).json({ message: "Gagal mengenkripsi password" });
 
-      res.json({ message: "Kode verifikasi telah dikirim ke email Anda" });
+      // Simpan data sementara
+      pendingUsers[email] = {
+        userData: {
+          username,
+          name,
+          date,
+          email,
+          password: hashedPassword,
+          role,
+          hpht: role === "ibu_hamil" ? hpht : null,
+        },
+        code: otpCode,
+        expires,
+      };
+
+      // Kirim email OTP
+      const transporter = nodemailer.createTransport({
+        service: "gmail",
+        auth: {
+          user: process.env.EMAIL_USER,
+          pass: process.env.EMAIL_PASS,
+        },
+      });
+
+      const mailOptions = {
+        from: `"Emotrack Support" <${process.env.EMAIL_USER}>`,
+        to: email,
+        subject: "Kode Verifikasi Pendaftaran - Emotrack",
+        html: `
+          <div style="font-family: Arial; padding: 20px;">
+            <h2 style="color:#4CAF50">Verifikasi Akun Emotrack</h2>
+            <p>Gunakan kode berikut untuk menyelesaikan proses pendaftaran akun Anda:</p>
+            <h1 style="background:#f2f2f2; padding:10px; border-radius:5px; display:inline-block;">${otpCode}</h1>
+            <p>Kode ini berlaku selama 5 menit. Jangan bagikan kode ini kepada siapa pun.</p>
+          </div>
+        `,
+      };
+
+      transporter.sendMail(mailOptions, (error) => {
+        if (error) {
+          console.error(error);
+          return res
+            .status(500)
+            .json({ message: "Gagal mengirim email verifikasi" });
+        }
+
+        res.json({
+          message: "Kode verifikasi telah dikirim ke email Anda",
+        });
+      });
     });
   });
 };

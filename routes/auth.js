@@ -8,7 +8,6 @@ router.post("/register", authController.register);
 router.post("/login", authController.login);
 
 // send code vertifikasi register
-// router.post("/request-register-otp", authController.requestRegisterOTP);
 router.post("/verify-register-otp", authController.verifyRegisterOTP);
 router.post("/resend-otp", authController.resendRegisterOTP);
 
